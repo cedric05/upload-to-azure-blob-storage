@@ -22,6 +22,9 @@ inputs:
   creds:
     description: 'az create-rb output'
     required: true
+branding:
+  icon: 'upload-cloud'  
+  color: 'green'
 outputs:
   uploaded-path:
     description: "uploaded path"
