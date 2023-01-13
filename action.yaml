@@ -1,0 +1,51 @@
+name: 'Upload to Azure Blob Storage'
+description: 'Upload to azure blob storage in structured timely manner'
+inputs:
+  source-file:
+    description: 'source file to upload'
+    required: true
+  base-project-path:
+    description: 'base path to stack up'
+    required: true
+  target-file:
+    description: 'target path in azure blob storage container'
+    required: true
+  overwrite:
+    description: 'overwrite if target-dir exists'
+    required: false
+  container-name:
+    description: 'azure blob storage container name'
+    required: true
+  storage-account-name:
+    description: 'azure storage account name'
+    required: true
+  creds:
+    description: 'az create-rb output'
+    required: true
+outputs:
+  uploaded-path:
+    description: "uploaded path"
+    value: uploaded to https://${{ inputs.storage-account-name }}.blob.core.windows.net/${{ inputs.container-name }}/${{ inputs.base-project-path }}/${{ inputs.target-file }}-${{ steps.shell-run.outputs.date }}.${{ steps.shell-run.outputs.extension }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get current date
+      id: shell-run
+      shell: bash
+      run: |
+        echo "date=$(date +'%Y-%m-%d')"  >> $GITHUB_OUTPUT
+        file="${{ inputs.source-file }}"
+        echo "extension=${file##*.}" >> $GITHUB_OUTPUT"
+    - uses: azure/login@v1
+      with:
+        creds: ${{ inputs.creds }}
+    - name: upload
+      shell: bash
+      run:  |
+        if [[ -n ${{ inputs.overwrite }} ]]; 
+        then
+          az storage blob upload --overwrite --name ${{ inputs.base-project-path }}/${{ inputs.target-file }}-${{ steps.shell-run.outputs.date }}.${{ steps.shell-run.outputs.extension }} --file ${{ inputs.source-file }} --container-name ${{ inputs.container-name }} --account-name ${{ inputs.storage-account-name }}  --auth-mode login
+        else 
+          az storage blob upload --name ${{ inputs.base-project-path }}/${{ inputs.target-file }}-${{ steps.shell-run.outputs.date }}.${{ steps.shell-run.outputs.extension }} --file ${{ inputs.source-file }} --container-name ${{ inputs.container-name }} --account-name ${{ inputs.storage-account-name }}  --auth-mode login
+        fi
+        
